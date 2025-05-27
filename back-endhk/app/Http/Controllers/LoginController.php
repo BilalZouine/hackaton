@@ -7,38 +7,32 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class LoginController extends Controller
 {
     // ✅ Inscription d’un utilisateur
-    public function register(Request $request)
+
+public function register(Request $request)
 {
-    $validated = $request->validate([
-        'name' => 'required',
-        'email' => 'required|email|unique:users',
-        'password' => 'required',
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
     ]);
 
-    $validated['password'] = bcrypt($validated['password']);
-    
+    // Générer le QR Code
+    $result = Builder::create()
+        ->data("USER_ID:{$user->id},EMAIL:{$user->email}")
+        ->size(300)
+        ->build();
 
-    $chars = '';
-    for ($i = 0; $i < 3; $i++) {
-        $chars .= chr(random_int(65, 90));  // random uppercase letter A-Z
-    }
-    $validated['qr_code'] = random_int(10000000, 99999999) . '.' . $chars;
+    $qrPath = "qr_codes/user_{$user->id}.png";
+    $result->saveToFile(public_path($qrPath));
 
+    $user->update(['qr_code_path' => $qrPath]);
 
-    $user = User::create($validated);
-
-    Auth::login($user); 
-
-
-    return response()->json([
-        'token' => $user->createToken('auth_token' , ['api'] , now()->addDays(1))->plainTextToken,
-        'user' => $user,
-        'message' => 'Registration successful'
-    ], 200);
+    return response()->json(['message' => 'Inscription réussie', 'qr_code' => $qrPath]);
 }
 
 

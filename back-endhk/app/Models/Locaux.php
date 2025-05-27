@@ -15,7 +15,9 @@ class Locaux extends Model
         'type',
         'capacite',
         'prix',
+        "status",
         'location',
+        "id_category",
     ];
     public $timestamps = true;
     public function reservations()
@@ -25,5 +27,9 @@ class Locaux extends Model
     public function factures()
     {
         return $this->hasMany(Factures::class, 'id_local', 'id_local');
+    }
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'id_local', 'id_local');
     }
 }
