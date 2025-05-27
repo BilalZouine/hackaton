@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { setClientCookie } from "@/lib/utils"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -43,9 +44,11 @@ export default function RegisterPage() {
       password: true,
       passwordConfirmation: true,
     })
+      window.location.href = "/dashboard"
+    
+            setClientCookie("token", "fake-token-for-demo", 7)
 
     // Here you can add further registration logic (e.g., API call)
-    console.log("Registration data:", { name, email, password, passwordConfirmation })
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

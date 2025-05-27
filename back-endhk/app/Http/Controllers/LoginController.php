@@ -20,6 +20,14 @@ class LoginController extends Controller
     ]);
 
     $validated['password'] = bcrypt($validated['password']);
+    
+
+    $chars = '';
+    for ($i = 0; $i < 3; $i++) {
+        $chars .= chr(random_int(65, 90));  // random uppercase letter A-Z
+    }
+    $validated['qr_code'] = random_int(10000000, 99999999) . '.' . $chars;
+
 
     $user = User::create($validated);
 
