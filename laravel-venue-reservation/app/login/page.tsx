@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { setClientCookie } from "@/lib/utils"
+import { useRouter } from "next/router"
+import { auth } from "@/services/api/auth"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -16,21 +18,30 @@ export default function LoginPage() {
   const [qrResult, setQrResult] = useState("")
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  // const route = useRouter()
 
 
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     // Simulate login process
-    if (email && password   ) {
-      setTimeout(() => {
+    try {
+      if (!email || !password) {
+        alert("Veuillez remplir tous les champs.")
+        return
+      }
 
+      // Here you can add further login logic (e.g., API call)
+      const response = await auth.login({ email, password })
+      if (response.status === 200) {
+        setClientCookie("token", response.data.token, 7)
         window.location.href = "/dashboard"
-
-        setClientCookie("token", "fake-token-for-demo", 7)
-      }, 2000)
+      } else {
+        alert("Identifiants incorrects. Veuillez réessayer.")
+      }
     }
-    else {
-      alert
+    catch (error) {
+      console.error("Erreur lors de la connexion :", error)
+      alert("Une erreur s'est produite lors de la connexion. Veuillez réessayer plus tard.")
     }
   }
 

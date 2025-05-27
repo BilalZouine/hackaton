@@ -6,13 +6,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import NavBar from "@/components/layout/navBar"
+import AjouterReservationModal from "@/components/admin/reservations/AjouterReservationModal"
+import EditReservationModal from "@/components/admin/reservations/EditReservationModal"
+import DetailReservationModal from "@/components/admin/reservations/DetailReservationModal"
+import ReservationCard from "@/components/admin/reservations/ReservationCard"
+import ReservationSearch from "@/components/admin/reservations/ReservationSearch"
+import { useState } from "react"
+import StatCard from "@/components/admin/dashboard/StatCard"
+import DataTable from "@/components/admin/dashboard/DataTable"
+import { Users, Building2 } from "lucide-react"
 
 export default function AdminDashboard() {
   const stats = {
-    total_reservations: 247,
-    reservations_aujourd_hui: 12,
-    revenus_mois: 15420,
-    locaux_actifs: 26,
+    total_reservations: {
+      value: 247,
+      trend: { value: 12, isPositive: true },
+      description: "par rapport au mois dernier"
+    },
+    reservations_aujourd_hui: {
+      value: 12,
+      description: "Réservations du jour"
+    },
+    revenus_mois: {
+      value: "15 420€",
+      trend: { value: 8, isPositive: true },
+      description: "par rapport au mois dernier"
+    },
+    locaux_actifs: {
+      value: "26/28",
+      description: "Locaux actifs"
+    }
   }
 
   const reservations_recentes = [
@@ -84,33 +108,92 @@ export default function AdminDashboard() {
     },
   ]
 
+  const [ajouterOpen, setAjouterOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [selectedReservation, setSelectedReservation] = useState(null)
+  const [reservations, setReservations] = useState(reservations_recentes)
+  const [filteredReservations, setFilteredReservations] = useState(reservations_recentes)
+
+  const handleAddReservation = (data) => {
+    setReservations((prev) => [
+      {
+        id: prev.length + 1,
+        user: { nom: data.user, email: "" },
+        local: { nom: data.local, type_libelle: "" },
+        date_reservation: data.date,
+        heure_debut: data.heure,
+        duree: data.duree,
+        montant_total: data.montant,
+        statut: "en_attente",
+        created_at: new Date().toISOString().slice(0, 10),
+      },
+      ...prev,
+    ])
+  }
+  const handleEditReservation = (data) => {
+    setReservations((prev) =>
+      prev.map((r) => (r.id === data.id ? { ...r, ...data } : r))
+    )
+  }
+
+  const handleDeleteReservation = (reservation: any) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette réservation ?")) {
+      setReservations((prev) => prev.filter((r) => r.id !== reservation.id))
+    }
+  }
+
+  const handleSearch = (filters: { search: string; status: string; date: Date | null }) => {
+    let filtered = reservations_recentes
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      filtered = filtered.filter(
+        (r) =>
+          r.user.nom.toLowerCase().includes(searchLower) ||
+          r.local.nom.toLowerCase().includes(searchLower) ||
+          r.local.type_libelle.toLowerCase().includes(searchLower)
+      )
+    }
+
+    if (filters.status) {
+      filtered = filtered.filter((r) => r.statut === filters.status)
+    }
+
+    if (filters.date) {
+      const searchDate = filters.date.toISOString().split("T")[0]
+      filtered = filtered.filter((r) => r.date_reservation === searchDate)
+    }
+
+    setFilteredReservations(filtered)
+  }
+
+  const localColumns = [
+    { key: "nom", label: "Nom", sortable: true },
+    { key: "type_libelle", label: "Type", sortable: true },
+    { key: "capacite", label: "Capacité", sortable: true },
+    { key: "prix_heure", label: "Prix/h", sortable: true },
+    { key: "localisation", label: "Localisation", sortable: true },
+    { key: "reservations_count", label: "Réservations", sortable: true },
+    { key: "actif", label: "Statut", sortable: true }
+  ]
+
+  const userColumns = [
+    { key: "nom", label: "Nom", sortable: true },
+    { key: "email", label: "Email", sortable: true },
+    { key: "role", label: "Rôle", sortable: true },
+    { key: "reservations_count", label: "Réservations", sortable: true },
+    { key: "created_at", label: "Inscription", sortable: true }
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Admin */}
-      <nav className="bg-white shadow-lg border-b-2 border-blue-600">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-blue-600">
-                ReservaLoc
-              </Link>
-              <Badge className="ml-3 bg-red-600">ADMIN</Badge>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-700 hover:text-blue-600">
-                Dashboard Client
-              </Link>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                Déconnexion
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <NavBar />
+      {/* Modals */}
+      <AjouterReservationModal open={ajouterOpen} onClose={() => setAjouterOpen(false)} onAdd={handleAddReservation} />
+      <EditReservationModal open={editOpen} onClose={() => setEditOpen(false)} reservation={selectedReservation} onEdit={handleEditReservation} />
+      <DetailReservationModal open={detailOpen} onClose={() => setDetailOpen(false)} reservation={selectedReservation} />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
@@ -121,54 +204,37 @@ export default function AdminDashboard() {
 
         {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Réservations</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_reservations}</div>
-              <p className="text-xs text-muted-foreground">+12% par rapport au mois dernier</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aujourd'hui</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.reservations_aujourd_hui}</div>
-              <p className="text-xs text-muted-foreground">Réservations du jour</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenus du mois</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.revenus_mois.toLocaleString()}€</div>
-              <p className="text-xs text-muted-foreground">+8% par rapport au mois dernier</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Locaux Actifs</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.locaux_actifs}</div>
-              <p className="text-xs text-muted-foreground">Sur 28 locaux total</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total Réservations"
+            value={stats.total_reservations.value}
+            description={stats.total_reservations.description}
+            icon={Calendar}
+            trend={stats.total_reservations.trend}
+          />
+          <StatCard
+            title="Aujourd'hui"
+            value={stats.reservations_aujourd_hui.value}
+            description={stats.reservations_aujourd_hui.description}
+            icon={BarChart3}
+          />
+          <StatCard
+            title="Revenus du mois"
+            value={stats.revenus_mois.value}
+            description={stats.revenus_mois.description}
+            icon={DollarSign}
+            trend={stats.revenus_mois.trend}
+          />
+          <StatCard
+            title="Locaux Actifs"
+            value={stats.locaux_actifs.value}
+            description={stats.locaux_actifs.description}
+            icon={MapPin}
+          />
         </div>
 
         {/* Contenu principal */}
         <Tabs defaultValue="reservations" className="space-y-6">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="reservations">Réservations</TabsTrigger>
             <TabsTrigger value="locaux">Locaux</TabsTrigger>
             <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
@@ -179,86 +245,31 @@ export default function AdminDashboard() {
           <TabsContent value="reservations" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Gestion des réservations</h2>
-              <Button>
+              <Button onClick={() => setAjouterOpen(true)} className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle réservation
               </Button>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Réservations récentes</CardTitle>
-                <CardDescription>Liste des dernières réservations effectuées</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Local</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Heure</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reservations_recentes.map((reservation) => (
-                      <TableRow key={reservation.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{reservation.user.nom}</div>
-                            <div className="text-sm text-gray-500">{reservation.user.email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{reservation.local.nom}</div>
-                            <div className="text-sm text-gray-500">{reservation.local.type_libelle}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{new Date(reservation.date_reservation).toLocaleDateString("fr-FR")}</TableCell>
-                        <TableCell>
-                          {reservation.heure_debut} ({reservation.duree}h)
-                        </TableCell>
-                        <TableCell className="font-medium">{reservation.montant_total}€</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              reservation.statut === "confirmee"
-                                ? "default"
-                                : reservation.statut === "en_attente"
-                                  ? "secondary"
-                                  : "destructive"
-                            }
-                          >
-                            {reservation.statut === "confirmee"
-                              ? "Confirmée"
-                              : reservation.statut === "en_attente"
-                                ? "En attente"
-                                : "Annulée"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <ReservationSearch onSearch={handleSearch} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredReservations.map((reservation) => (
+                <ReservationCard
+                  key={reservation.id}
+                  reservation={reservation}
+                  onView={(res) => {
+                    setSelectedReservation(res)
+                    setDetailOpen(true)
+                  }}
+                  onEdit={(res) => {
+                    setSelectedReservation(res)
+                    setEditOpen(true)
+                  }}
+                  onDelete={handleDeleteReservation}
+                />
+              ))}
+            </div>
           </TabsContent>
 
           {/* Gestion des locaux */}
@@ -271,58 +282,32 @@ export default function AdminDashboard() {
               </Button>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Liste des locaux</CardTitle>
-                <CardDescription>Gérez vos locaux et leurs paramètres</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Capacité</TableHead>
-                      <TableHead>Prix/h</TableHead>
-                      <TableHead>Localisation</TableHead>
-                      <TableHead>Réservations</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {locaux.map((local) => (
-                      <TableRow key={local.id}>
-                        <TableCell className="font-medium">{local.nom}</TableCell>
-                        <TableCell>{local.type_libelle}</TableCell>
-                        <TableCell>{local.capacite} pers.</TableCell>
-                        <TableCell className="font-medium">{local.prix_heure}€</TableCell>
-                        <TableCell>{local.localisation}</TableCell>
-                        <TableCell>{local.reservations_count}</TableCell>
-                        <TableCell>
-                          <Badge variant={local.actif ? "default" : "secondary"}>
-                            {local.actif ? "Actif" : "Inactif"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <DataTable
+              columns={localColumns}
+              data={locaux}
+              searchPlaceholder="Rechercher un local..."
+              filterOptions={[
+                {
+                  key: "type",
+                  label: "Type de local",
+                  options: [
+                    { value: "terrain_sport", label: "Terrain de Sport" },
+                    { value: "salle_conference", label: "Salle de Conférence" }
+                  ]
+                },
+                {
+                  key: "actif",
+                  label: "Statut",
+                  options: [
+                    { value: "true", label: "Actif" },
+                    { value: "false", label: "Inactif" }
+                  ]
+                }
+              ]}
+              onView={(local) => console.log("View local:", local)}
+              onEdit={(local) => console.log("Edit local:", local)}
+              onDelete={(local) => console.log("Delete local:", local)}
+            />
           </TabsContent>
 
           {/* Gestion des utilisateurs */}
@@ -335,54 +320,24 @@ export default function AdminDashboard() {
               </Button>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Liste des utilisateurs</CardTitle>
-                <CardDescription>Gérez les comptes utilisateurs et leurs permissions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Rôle</TableHead>
-                      <TableHead>Réservations</TableHead>
-                      <TableHead>Inscription</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {utilisateurs.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.nom}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === "admin" ? "destructive" : "default"}>
-                            {user.role === "admin" ? "Admin" : "Client"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{user.reservations_count}</TableCell>
-                        <TableCell>{new Date(user.created_at).toLocaleDateString("fr-FR")}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <DataTable
+              columns={userColumns}
+              data={utilisateurs}
+              searchPlaceholder="Rechercher un utilisateur..."
+              filterOptions={[
+                {
+                  key: "role",
+                  label: "Rôle",
+                  options: [
+                    { value: "admin", label: "Admin" },
+                    { value: "client", label: "Client" }
+                  ]
+                }
+              ]}
+              onView={(user) => console.log("View user:", user)}
+              onEdit={(user) => console.log("Edit user:", user)}
+              onDelete={(user) => console.log("Delete user:", user)}
+            />
           </TabsContent>
 
           {/* Statistiques */}

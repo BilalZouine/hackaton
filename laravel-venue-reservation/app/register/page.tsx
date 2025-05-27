@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { setClientCookie } from "@/lib/utils"
+import { auth } from "@/services/api/auth"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -23,7 +24,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("")
   const [passwordConfirmation, setPasswordConfirmation] = useState("")
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!name || !email || !password || password !== passwordConfirmation) {
@@ -44,9 +45,33 @@ export default function RegisterPage() {
       password: true,
       passwordConfirmation: true,
     })
-      window.location.href = "/dashboard"
-    
-            setClientCookie("token", "fake-token-for-demo", 7)
+
+
+    try {
+
+      // Here you can add further login logic (e.g., API call)
+      const response = await auth.register({
+        name,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+
+      if (response.status === 200) {
+        setClientCookie("token", response.data.token, 7)
+        setClientCookie("role", response.data.role, 107)
+        window.location.href = "/dashboard"
+      } else {
+        alert("Identifiants incorrects. Veuillez réessayer.")
+      }
+    }
+    catch (error) {
+      console.error("Erreur lors de la connexion :", error)
+      alert("Une erreur s'est produite lors de la connexion. Veuillez réessayer plus tard.")
+    }
+
+
+
 
     // Here you can add further registration logic (e.g., API call)
   }

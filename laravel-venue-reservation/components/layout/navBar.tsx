@@ -8,6 +8,8 @@ import { getClientToken, removeClientCookie } from '@/lib/utils'
 function NavBar() {
   const [isAuthenticated, setIsAuthenticated] = useState(!getClientToken('token'))
 
+  const role = getClientToken('role')
+
   useEffect(() => {
     const token = getClientToken('token')
     setIsAuthenticated(!!token)
@@ -46,14 +48,22 @@ function NavBar() {
 
             {/* Auth Buttons */}
             {isAuthenticated ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="text-red-600 hover:bg-red-50"
-              >
-                Déconnexion
-              </Button>
+
+              <>
+                <Link href="/admin" className={`text-gray-700 hover:text-blue-600 ${role !== 'admin' ? '2' : ''}`}>
+                  Admin
+                </Link>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  Déconnexion
+                </Button>
+              </>
+
             ) : (
               <div className="flex items-center space-x-2">
                 <Link href="/login" className="text-gray-700 hover:text-blue-600">
@@ -64,6 +74,9 @@ function NavBar() {
                 </Link>
               </div>
             )}
+
+
+
           </div>
         </div>
       </div>
