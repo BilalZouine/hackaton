@@ -17,6 +17,8 @@ return new class extends Migration
             $table->integer("capacite");
             $table->decimal("prix", 10, 2);
             $table->string("location");
+            $table->unsignedBigInteger("id_category");
+            $table->foreign("id_category")->references("id")->on("categories")->onDelete("cascade");
             $table->timestamps();
         });
     }

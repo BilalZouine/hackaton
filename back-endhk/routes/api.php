@@ -31,3 +31,5 @@ Route::delete('/factures/{id}', [FacturesController::class, 'destroy']);
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/register', [LoginController::class, 'register']);
 Route::post('/logout', [LoginController::class, 'logout']);
+
+Route::post('/locaux/status/{id}', [LocauxController::class, 'toggleStatus']);

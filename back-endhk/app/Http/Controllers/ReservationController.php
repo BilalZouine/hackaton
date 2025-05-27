@@ -12,15 +12,7 @@ class ReservationController extends Controller
      */
     public function index()
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return response()->json(Reservation::all());
     }
 
     /**
@@ -28,38 +20,54 @@ class ReservationController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $reservation=$request->validate([
+            "date"=>"required",
+            "heure"=>"required",
+            "duree"=>"required",
+            "id_user"=>"required|exists:users,id",
+            "id_local"=>"required|exists:local,id_local"
+        ]);
+        Reservation::create($reservation);
+        return response()->json($reservation);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Reservation $reservation)
+    public function show($id)
     {
-        //
+        $reservation=Reservation::findOrFail($id);
+        return response()->json($reservation);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Reservation $reservation)
-    {
-        //
-    }
+
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Reservation $reservation)
+    public function update(Request $request, $id)
     {
-        //
+        $rse=Reservation::findOrFail($id);
+            $reservation=$request->validate([
+            "date"=>"required",
+            "heure"=>"required",
+            "duree"=>"required",
+            "id_user"=>"required|exists:users,id",
+            "id_local"=>"required|exists:local,id_local"
+        ]);
+        $rse->update($reservation);
+        return response()->json($reservation);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Reservation $reservation)
+    public function destroy($id)
     {
-        //
+        Reservation::destroy($id);
+        return response()->json(["message"=>"bien supprimer"]);
     }
 }
